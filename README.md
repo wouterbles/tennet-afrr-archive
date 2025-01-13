@@ -7,7 +7,7 @@ A Python application for downloading and archiving TenneT's AFRR (Automatic Freq
 TenneT's API only provides access to the latest bidladder data. This project automatically downloads and stores bidladder snapshots based on the time-to-delivery, enabling historical analysis of how the ladder changes over time.
 
 ## Sampling
-To keep the size of the manageable, the sampling frequency is based on the time-to-delivery:
+To keep the size of the archive manageable, the sampling frequency is based on the time-to-delivery:
 
 - 24h-12h: Every 3 hours
 - 12h-6h: Every 2 hours
