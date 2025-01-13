@@ -1,0 +1,101 @@
+import os
+from pathlib import Path
+
+import pandas as pd
+from tenneteu import TenneTeuClient
+
+
+class AFRRDataFetcher:
+    def __init__(self, api_key: str):
+        self.client = TenneTeuClient(api_key=api_key)
+        self.base_path = Path("data")
+        self.base_path.mkdir(exist_ok=True)
+        self.current_time = None
+
+    def set_current_time(self):
+        self.current_time = pd.Timestamp.now(tz="Europe/Amsterdam")
+
+    def should_store_snapshot(self, hours_to_delivery: float) -> bool:
+        """
+        Determine if we should store a snapshot based on adaptive sampling strategy.
+
+        Sampling frequency:
+        - 24h-12h: Every 3 hours
+        - 12h-6h:  Every 2 hours
+        - 6h-2h:   Every hour
+        - <2h:     Every 15 minutes
+        """
+        minutes = self.current_time.minute
+        hour = self.current_time.hour
+
+        if hours_to_delivery > 12:
+            return hour % 3 == 0 and minutes == 0
+        elif hours_to_delivery > 6:
+            return hour % 2 == 0 and minutes == 0
+        elif hours_to_delivery > 2:
+            return minutes == 0
+        else:
+            return minutes in [0, 15, 30, 45]
+
+    def get_current_bid_ladder(self):
+        """Fetch current and upcoming bid ladders from TenneT API"""
+        self.set_current_time()
+        d_to = self.current_time + pd.Timedelta(hours=24)
+
+        try:
+            df = self.client.query_merit_order_list(d_from=self.current_time, d_to=d_to)
+            return df
+        except Exception as e:
+            print(f"Error fetching bid ladder: {e}")
+            return None
+
+    def process_and_store_data(self, df: pd.DataFrame):
+        """Process and store bid ladder data with time-to-delivery tracking"""
+        if df is None or df.empty:
+            return
+
+        # Group by unique ISP timestamp
+        for isp_start, isp_data in df.groupby(level=0):
+            time_to_delivery = isp_start - self.current_time
+            hours_to_delivery = time_to_delivery.total_seconds() / 3600
+
+            if hours_to_delivery <= 0:
+                continue
+
+            if not self.should_store_snapshot(hours_to_delivery):
+                continue
+
+            # Create storage structure - simplified path
+            storage_path = self.base_path / isp_start.strftime("%Y-%m-%d/%H%M")
+            storage_path.mkdir(parents=True, exist_ok=True)
+
+            # Store only essential columns with minimal data types
+            store_data = pd.DataFrame(
+                {
+                    "capacity_threshold": isp_data["Capacity Threshold"].astype(
+                        "int16"
+                    ),
+                    "price_down": isp_data["Price Down"].astype("float32"),
+                    "price_up": isp_data["Price Up"].astype("float32"),
+                    "snapshot_timestamp": self.current_time,
+                }
+            )
+
+            # Save to parquet file
+            filename = f"snapshot_{self.current_time.strftime('%H%M')}_ttd_{hours_to_delivery:.1f}h.parquet"
+            filepath = storage_path / filename
+            store_data.to_parquet(filepath)
+
+
+def main():
+    api_key = os.getenv("TENNET_API_KEY")
+    if not api_key:
+        raise ValueError("TENNET_API_KEY environment variable not set")
+
+    scraper = AFRRDataFetcher(api_key)
+    df = scraper.get_current_bid_ladder()
+    scraper.process_and_store_data(df)
+
+
+if __name__ == "__main__":
+    main()
