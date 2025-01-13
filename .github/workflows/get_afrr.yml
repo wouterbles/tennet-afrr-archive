@@ -26,10 +26,10 @@ jobs:
         with:
           python-version-file: ".python-version"
         
-      - name: Run fetcher
+      - name: Fetch AFRR data
         env:
           TENNET_API_KEY: ${{ secrets.TENNET_API_KEY }}
-        run: uv run affr_data_fetcher.py
+        run: uv run --frozen affr_data_fetcher.py 
           
       - name: Commit and push if changes
         run: |
