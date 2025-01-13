@@ -2,8 +2,7 @@ name: Get and Store AFRR Bid Ladder
 
 on:
   schedule:
-    - cron: '*/15 * * * *'  # Run every 30 minutes
-  workflow_dispatch:  # Allow manual triggers
+    - cron: '*/15 * * * *'
 
 jobs:
   get_afrr:
