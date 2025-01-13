@@ -1,7 +1,7 @@
 [project]
-name = "tennet-afrr-scraper"
+name = "tennet-afrr-fetcher"
 version = "0.1.0"
-description = "Scraping the TenneT AFRR bid ladders every 30 minutes"
+description = "Fetching the TenneT AFRR bid ladders every 15 minutes"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
