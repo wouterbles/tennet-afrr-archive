@@ -1,4 +1,4 @@
-# TenneT AFRR Bid Ladder Fetcher
+# TenneT AFRR Bid Ladder Archive
 
 A Python application for downloading and archiving TenneT's AFRR (Automatic Frequency Restoration Reserve) bidladders at regular intervals.
 

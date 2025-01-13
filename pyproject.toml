@@ -1,5 +1,5 @@
 [project]
-name = "tennet-afrr-fetcher"
+name = "tennet-afrr-archive"
 version = "0.1.0"
 description = "Fetching the TenneT AFRR bid ladders every 15 minutes"
 readme = "README.md"
