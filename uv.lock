@@ -209,7 +209,7 @@ wheels = [
 ]
 
 [[package]]
-name = "tennet-afrr-scraper"
+name = "tennet-afrr-archive"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
