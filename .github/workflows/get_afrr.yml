@@ -2,7 +2,7 @@ name: Get and Store AFRR Bid Ladder
 
 on:
   schedule:
-    - cron: '*/30 * * * *'  # Run every 30 minutes
+    - cron: '*/15 * * * *'  # Run every 30 minutes
   workflow_dispatch:  # Allow manual triggers
 
 jobs:
@@ -33,7 +33,7 @@ jobs:
       - name: Run fetcher
         env:
           TENNET_API_KEY: ${{ secrets.TENNET_API_KEY }}
-        run: python get_afrr.py
+        run: python affr_data_fetcher.py
           
       - name: Commit and push if changes
         run: |
