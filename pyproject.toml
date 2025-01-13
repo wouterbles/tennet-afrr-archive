@@ -1,0 +1,12 @@
+[project]
+name = "tennet-afrr-scraper"
+version = "0.1.0"
+description = "Scraping the TenneT AFRR bid ladders every 30 minutes"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pandas>=2.2.3",
+    "pyarrow>=18.1.0",
+    "python-dotenv>=1.0.1",
+    "tenneteu-py>=0.1.2",
+]
