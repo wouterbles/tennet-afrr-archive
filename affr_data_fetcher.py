@@ -26,43 +26,54 @@ class AFRRDataFetcher:
         return "CEST" if timestamp.dst() else "CET"
 
     def set_current_time(self):
-        """Set current time and calculate rounded time to nearest half hour"""
+        """Set current time and calculate rounded time to nearest quarter hour"""
         self.current_time = pd.Timestamp.now(tz="Europe/Amsterdam")
 
-        # Round to nearest half hour
+        # Round to nearest quarter hour
         minutes = self.current_time.minute
-        rounded_minutes = round(minutes / 30) * 30
+        rounded_minutes = round(minutes / 15) * 15
 
-        # Create new timestamp with rounded minutes
-        self.rounded_time = self.current_time.replace(
-            minute=rounded_minutes, second=0, microsecond=0
-        )
+        # Handle rollover to next hour
+        if rounded_minutes == 60:
+            self.rounded_time = (self.current_time + pd.Timedelta(hours=1)).replace(
+                minute=0, second=0, microsecond=0
+            )
+        else:
+            self.rounded_time = self.current_time.replace(
+                minute=rounded_minutes, second=0, microsecond=0
+            )
 
-    def is_within_tolerance(self, tolerance_minutes: int = 10) -> bool:
-        """Check if current time is within tolerance of its rounded half hour"""
+    def is_within_tolerance(self, tolerance_minutes: int = 5) -> bool:
+        """Check if current time is within tolerance of its rounded quarter hour"""
         diff_minutes = abs((self.current_time - self.rounded_time).total_seconds() / 60)
         return diff_minutes <= tolerance_minutes
 
-    def should_store_snapshot(self, hours_to_delivery: float) -> bool:
+    def should_store_snapshot(
+        self, isp_start: pd.Timestamp, hours_to_delivery: float
+    ) -> bool:
         """
-        Determine if we should store a snapshot based on sampling strategy.
+        Determine if we should store a snapshot based on ISP alignment and hours to delivery.
 
-        Sampling frequency:
-        - 24h-12h: Every 2 hours
-        - 12h-6h: Every hour
-        - <6h: Every 30 minutes
+        Sampling strategy:
+        - <3h: Every 15 minutes (all ISPs)
+        - 3h-12h: Store when current time aligns with ISP pattern (00, 15, 30, 45)
+        - ≥12h: Store every 2 hours, aligned with ISP pattern
         """
-        # <6h: Every 30 minutes (store on :00 and :30)
-        if hours_to_delivery < 6:
-            return self.rounded_time.minute in (0, 30)
+        current_minutes = self.rounded_time.minute
+        current_hour = self.rounded_time.hour
+        isp_minutes = isp_start.minute
 
-        # 6h-12h: Every hour (store on :00)
+        # Less than 3 hours: sample every 15 minutes
+        if hours_to_delivery < 3:
+            return True
+
+        # Between 3 and 12 hours: store when current time aligns with ISP pattern
         elif hours_to_delivery < 12:
-            return self.rounded_time.minute == 0
+            return current_minutes == isp_minutes
 
-        # 12h-24h: Every 2 hours (store on even hours)
+        # Beyond 12 hours: store every 2 hours, maintaining ISP alignment
         else:
-            return self.rounded_time.minute == 0 and self.rounded_time.hour % 2 == 0
+            return current_hour % 2 == 0 and current_minutes == isp_minutes
 
     def set_current_bid_ladder(self):
         """Fetch current and upcoming bid ladders from TenneT API"""
@@ -99,7 +110,7 @@ class AFRRDataFetcher:
 
             if hours_to_delivery < 0:
                 continue
-            elif not self.should_store_snapshot(hours_to_delivery):
+            elif not self.should_store_snapshot(isp_start, hours_to_delivery):
                 continue
 
             # Create storage structure
@@ -125,7 +136,7 @@ class AFRRDataFetcher:
             # Save to parquet file using hours to delivery in filename
             filename = (
                 f"snapshot_{self.current_time.strftime('%H%M')}_"
-                f"htd_{hours_to_delivery:.1f}.parquet"
+                f"htd_{hours_to_delivery:.2f}.parquet"
             )
             filepath = storage_path / filename
             store_data.to_parquet(filepath)
