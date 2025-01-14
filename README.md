@@ -7,13 +7,15 @@ A Python application for downloading and archiving TenneT's AFRR (Automatic Freq
 TenneT's API only provides access to the latest bidladder data. This project automatically downloads and stores bidladder snapshots based on the time-to-delivery, enabling historical analysis of how the ladder changes over time.
 
 ## Sampling
-To keep the size of the archive manageable, the sampling frequency varies based on the time-to-delivery:
+To keep the size of the archive manageable and ensure consistent hours-to-delivery across ISPs, the sampling frequency varies based on the time-to-delivery:
 
-- 24h-12h: Every 2 hours (stored at even hours, e.g., 00:00, 02:00, 04:00...)
-- 12h-6h: Every hour (stored at HH:00)
-- <6h: Every 30 minutes (stored at HH:00 and HH:30)
+- >12h: Every 2 hours, aligned with ISP pattern (e.g., ISP at :00 sampled at 00:00, 02:00, 04:00...)
+- 3h-12h: Every 15 minutes, aligned with ISP pattern (sampled when current time matches ISP quarter)
+- <3h: Every 15 minutes for all ISPs
 
-> Note: This project uses GitHub Actions to run the fetcher, which means executions may not occur exactly on the specified intervals. GitHub schedules workflows based on resource availability, with high workload periods typically occurring around the hour mark (HH:00). To work around this, I've implemented a 10-minute tolerance window on either side of the target time and scheduled the jobs to run slightly before the target time (at XX:28 and XX:58).
+The sampling strategy ensures that when comparing different ISPs (e.g., ISP1 at :00 vs ISP2 at :15), they will have consistent hours-to-delivery, making historical analysis more reliable.
+
+> Note: This project uses GitHub Actions to run the fetcher, which means executions may not occur exactly on the specified intervals. GitHub schedules workflows based on resource availability, with high workload periods typically occurring around the hour mark (HH:00). To work around this, I've implemented a 5-minute tolerance window on either side of the target time and scheduled the jobs to run slightly before the quarter hours.
 
 ## Data Structure
 ```
@@ -27,9 +29,9 @@ The data is stored based on the date and time of the ISP (Imbalance Settlement P
 
 - YYYY-MM-DD: The date of the ISP
 - HHMM_DST: The time of the ISP in 24-hour format, where DST indicates whether Daylight Saving Time is in effect (e.g., 1400_CET or 1400_CEST)
-- snapshot_HHMM_htd_X.X.parquet: The Parquet file containing the snapshot data, where:
+- snapshot_HHMM_htd_X.XX.parquet: The Parquet file containing the snapshot data, where:
     - HHMM: Time of the snapshot
-    - X.X: Hours-to-delivery
+    - X.XX: Hours-to-delivery
 
 Each Parquet file contains:
 
@@ -37,10 +39,10 @@ Each Parquet file contains:
 - `capacity_threshold` (int)
 - `price_down` (float)
 - `price_up` (float)
-- `snapshot_timestamp` (timestamp): timestamp of snapshot (not rounded to nearest half hour)
+- `snapshot_timestamp` (timestamp): timestamp of snapshot (not rounded to nearest quarter hour)
 - `minutes_to_delivery` (int): minutes to the start of the ISP (delivery)
 
-    This value is rounded to the nearest half hour if within the tolerance (10 minutes). Can be useful for data analysis purposes.
+    This value is rounded to the nearest quarter hour if within the tolerance (5 minutes). Can be useful for data analysis purposes.
 
 ## Acknowledgements
 

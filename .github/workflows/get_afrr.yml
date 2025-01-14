@@ -2,7 +2,7 @@ name: Get and Store AFRR Bid Ladder
 
 on:
   schedule:
-    - cron: '58,28 * * * *'  # Run at 58 and 28 minutes past each hour
+    - cron: '56,41,26,11 * * * *'
 
 jobs:
   get_afrr:
