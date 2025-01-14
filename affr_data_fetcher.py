@@ -76,7 +76,7 @@ class AFRRDataFetcher:
         """Fetch current and upcoming bid ladders from TenneT API"""
         self.set_current_time()
         d_from = self.current_time - pd.Timedelta(minutes=5)
-        d_to = self.current_time + pd.Timedelta(hours=24)
+        d_to = self.current_time + pd.Timedelta(hours=23, minutes=55)
 
         logging.info(f"Fetching bid ladder data from {d_from} to {d_to}")
 
