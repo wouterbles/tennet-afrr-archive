@@ -38,6 +38,8 @@ class AFRRDataFetcher:
             minute=rounded_minutes, second=0, microsecond=0
         )
 
+        logging.info(f"Rounded {self.current_time} to: {self.rounded_time}")
+
     def is_within_tolerance(self, tolerance_minutes: int = 7) -> bool:
         """Check if current time is within tolerance of its rounded quarter hour"""
         diff_minutes = abs((self.current_time - self.rounded_time).total_seconds() / 60)
