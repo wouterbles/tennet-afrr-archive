@@ -14,7 +14,7 @@ To keep the size of the archive manageable, the sampling frequency varies based 
 - 6h-3h: Every 30 minutes (stored at HH:00 and HH:30)
 - <3h: Every 15 minutes (stored at HH:00, HH:15, HH:30, HH:45)
 
-> Note: This project uses GitHub Actions to run the fetcher, which means executions may not occur exactly on the specified intervals. GitHub schedules workflows based on resource availability, with high workload periods typically occurring around the hour mark (HH:00). To work around this, I've implemented a 5-minute tolerance window on either side of the target time.
+> Note: This project uses GitHub Actions to run the fetcher, which means executions may not occur exactly on the specified intervals. GitHub schedules workflows based on resource availability, with high workload periods typically occurring around the hour mark (HH:00). To work around this, I've implemented a 7-minute tolerance window on either side of the target time.
 
 ## Data Structure
 ```
@@ -41,7 +41,7 @@ Each Parquet file contains:
 - `snapshot_timestamp` (timestamp): timestamp of snapshot (not rounded to nearest quarter)
 - `minutes_to_delivery` (int): minutes to the start of the ISP (delivery)
 
-    This value is rounded to the nearest quarter if within the tolerance (5 minutes). Can be useful for data analysis purposes.
+    This value is rounded to the nearest quarter if within the tolerance (7 minutes). Can be useful for data analysis purposes.
 
 ## Acknowledgements
 
