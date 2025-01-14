@@ -1,7 +1,7 @@
 [project]
 name = "tennet-afrr-archive"
 version = "0.1.0"
-description = "Fetching the TenneT AFRR bid ladders every 15 minutes"
+description = "Downloading and storing the TenneT AFRR bid ladders at regular intervals "
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
