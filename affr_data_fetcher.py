@@ -38,7 +38,7 @@ class AFRRDataFetcher:
             minute=rounded_minutes, second=0, microsecond=0
         )
 
-    def is_within_tolerance(self, tolerance_minutes: int = 5) -> bool:
+    def is_within_tolerance(self, tolerance_minutes: int = 7) -> bool:
         """Check if current time is within tolerance of its rounded quarter hour"""
         diff_minutes = abs((self.current_time - self.rounded_time).total_seconds() / 60)
         return diff_minutes <= tolerance_minutes
@@ -75,8 +75,8 @@ class AFRRDataFetcher:
     def set_current_bid_ladder(self):
         """Fetch current and upcoming bid ladders from TenneT API"""
         self.set_current_time()
-        d_from = self.current_time - pd.Timedelta(minutes=5)
-        d_to = self.current_time + pd.Timedelta(hours=23, minutes=55)
+        d_from = self.current_time - pd.Timedelta(minutes=7)
+        d_to = self.current_time + pd.Timedelta(hours=23, minutes=53)
 
         logging.info(f"Fetching bid ladder data from {d_from} to {d_to}")
 
