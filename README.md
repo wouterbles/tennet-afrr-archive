@@ -20,14 +20,14 @@ To keep the size of the archive manageable, the sampling frequency varies based 
 ```
 data/
 └── YYYY-MM-DD/
-    └── HHMM/
+    └── HHMM_DST/
         └── snapshot_HHMM_ttd_X.XXh.parquet
 ```
 
 The data is stored based on the date and time of the ISP (Imbalance Settlement Period). Each snapshot is saved in a Parquet file with a filename that includes the time of the snapshot and the hours-to-delivery (htd).
 
 - YYYY-MM-DD: The date of the ISP
-- HHMM: The time of the ISP in 24-hour format
+- HHMM_DST: The time of the ISP in 24-hour format, where DST indicates whether Daylight Saving Time is in effect (e.g., 1400_CET or 1400_CEST)
 - snapshot_HHMM_htd_X.XX.parquet: The Parquet file containing the snapshot data, where:
     - HHMM: Time of the snapshot
     - X.XX: Hours-to-delivery
