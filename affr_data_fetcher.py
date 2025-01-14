@@ -26,22 +26,20 @@ class AFRRDataFetcher:
         return "CEST" if timestamp.dst() else "CET"
 
     def set_current_time(self):
-        """Set current time and calculate rounded time to nearest quarter hour"""
+        """Set current time and calculate rounded time to nearest half hour"""
         self.current_time = pd.Timestamp.now(tz="Europe/Amsterdam")
 
-        # Round to nearest quarter
+        # Round to nearest half hour
         minutes = self.current_time.minute
-        rounded_minutes = round(minutes / 15) * 15
+        rounded_minutes = round(minutes / 30) * 30
 
         # Create new timestamp with rounded minutes
         self.rounded_time = self.current_time.replace(
             minute=rounded_minutes, second=0, microsecond=0
         )
 
-        logging.info(f"Rounded {self.current_time} to: {self.rounded_time}")
-
-    def is_within_tolerance(self, tolerance_minutes: int = 7) -> bool:
-        """Check if current time is within tolerance of its rounded quarter hour"""
+    def is_within_tolerance(self, tolerance_minutes: int = 10) -> bool:
+        """Check if current time is within tolerance of its rounded half hour"""
         diff_minutes = abs((self.current_time - self.rounded_time).total_seconds() / 60)
         return diff_minutes <= tolerance_minutes
 
@@ -52,18 +50,10 @@ class AFRRDataFetcher:
         Sampling frequency:
         - 24h-12h: Every 2 hours
         - 12h-6h: Every hour
-        - 6h-3h: Every 30 minutes
-        - <3h: Every 15 minutes
+        - <6h: Every 30 minutes
         """
-        if not self.is_within_tolerance():
-            return False
-
-        # <3h: Every 15 minutes (store all rounded quarters)
-        if hours_to_delivery < 3:
-            return True
-
-        # 3h-6h: Every 30 minutes (store on :00 and :30)
-        elif hours_to_delivery < 6:
+        # <6h: Every 30 minutes (store on :00 and :30)
+        if hours_to_delivery < 6:
             return self.rounded_time.minute in (0, 30)
 
         # 6h-12h: Every hour (store on :00)
@@ -77,8 +67,14 @@ class AFRRDataFetcher:
     def set_current_bid_ladder(self):
         """Fetch current and upcoming bid ladders from TenneT API"""
         self.set_current_time()
-        d_from = self.current_time - pd.Timedelta(minutes=7)
-        d_to = self.current_time + pd.Timedelta(hours=23, minutes=53)
+
+        if not self.is_within_tolerance():
+            raise ValueError(
+                f"Current time {self.current_time} is not within tolerance of rounded time {self.rounded_time}"
+            )
+
+        d_from = self.current_time - pd.Timedelta(minutes=10)
+        d_to = self.current_time + pd.Timedelta(hours=23, minutes=50)
 
         logging.info(f"Fetching bid ladder data from {d_from} to {d_to}")
         df = self.client.query_merit_order_list(d_from=d_from, d_to=d_to)
@@ -101,12 +97,8 @@ class AFRRDataFetcher:
             minutes_to_delivery = int(time_to_delivery.total_seconds() / 60)
             hours_to_delivery = minutes_to_delivery / 60
 
-            if not self.is_within_tolerance():
-                raise ValueError(
-                    f"Current time {self.current_time} is not within tolerance"
-                )
-            if hours_to_delivery <= 0:
-                continue  # Skip past ISP periods
+            if hours_to_delivery < 0:
+                continue
             elif not self.should_store_snapshot(hours_to_delivery):
                 continue
 
@@ -133,7 +125,7 @@ class AFRRDataFetcher:
             # Save to parquet file using hours to delivery in filename
             filename = (
                 f"snapshot_{self.current_time.strftime('%H%M')}_"
-                f"htd_{hours_to_delivery:.2f}.parquet"
+                f"htd_{hours_to_delivery:.1f}.parquet"
             )
             filepath = storage_path / filename
             store_data.to_parquet(filepath)
