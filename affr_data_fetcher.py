@@ -75,12 +75,13 @@ class AFRRDataFetcher:
     def set_current_bid_ladder(self):
         """Fetch current and upcoming bid ladders from TenneT API"""
         self.set_current_time()
+        d_from = self.current_time - pd.Timedelta(minutes=5)
         d_to = self.current_time + pd.Timedelta(hours=24)
 
-        logging.info(f"Fetching bid ladder data from {self.current_time} to {d_to}")
+        logging.info(f"Fetching bid ladder data from {d_from} to {d_to}")
 
         try:
-            df = self.client.query_merit_order_list(d_from=self.current_time, d_to=d_to)
+            df = self.client.query_merit_order_list(d_from=d_from, d_to=d_to)
         except Exception as e:
             logging.error(f"Error fetching bid ladder: {e}")
             return
