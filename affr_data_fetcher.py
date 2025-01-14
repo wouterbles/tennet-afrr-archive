@@ -21,6 +21,10 @@ class AFRRDataFetcher:
         self.rounded_time = None
         self.df = None
 
+    def get_timezone_suffix(self, timestamp: pd.Timestamp) -> str:
+        """Return CET or CEST depending on whether DST is in effect"""
+        return "CEST" if timestamp.dst() else "CET"
+
     def set_current_time(self):
         """Set current time and calculate rounded time to nearest quarter hour"""
         self.current_time = pd.Timestamp.now(tz="Europe/Amsterdam")
@@ -105,7 +109,10 @@ class AFRRDataFetcher:
                 continue
 
             # Create storage structure
-            storage_path = self.base_path / isp_start.strftime("%Y-%m-%d/%H%M")
+            tz_suffix = self.get_timezone_suffix(isp_start)
+            storage_path = (
+                self.base_path / f"{isp_start.strftime('%Y-%m-%d/%H%M')}_{tz_suffix}"
+            )
             storage_path.mkdir(parents=True, exist_ok=True)
 
             # Store data with additional time information
