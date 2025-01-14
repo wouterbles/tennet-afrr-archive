@@ -81,12 +81,7 @@ class AFRRDataFetcher:
         d_to = self.current_time + pd.Timedelta(hours=23, minutes=53)
 
         logging.info(f"Fetching bid ladder data from {d_from} to {d_to}")
-
-        try:
-            df = self.client.query_merit_order_list(d_from=d_from, d_to=d_to)
-        except Exception as e:
-            logging.error(f"Error fetching bid ladder: {e}")
-            return
+        df = self.client.query_merit_order_list(d_from=d_from, d_to=d_to)
 
         if df is not None:
             logging.info(f"Successfully fetched {len(df)} bid ladder entries")
@@ -106,6 +101,10 @@ class AFRRDataFetcher:
             minutes_to_delivery = int(time_to_delivery.total_seconds() / 60)
             hours_to_delivery = minutes_to_delivery / 60
 
+            if not self.is_within_tolerance():
+                raise ValueError(
+                    f"Current time {self.current_time} is not within tolerance"
+                )
             if hours_to_delivery <= 0:
                 continue  # Skip past ISP periods
             elif not self.should_store_snapshot(hours_to_delivery):
@@ -148,8 +147,7 @@ def main():
 
     api_key = os.getenv("TENNET_API_KEY")
     if not api_key:
-        logging.error("TENNET_API_KEY environment variable not set")
-        return
+        raise ValueError("TENNET_API_KEY environment variable not set")
 
     fetcher = AFRRDataFetcher(api_key)
     fetcher.set_current_bid_ladder()
