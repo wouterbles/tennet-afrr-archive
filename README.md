@@ -15,7 +15,7 @@ To keep the size of the archive manageable and ensure consistent hours-to-delive
 
 The sampling strategy ensures that when comparing different ISPs (e.g., ISP1 at :00 vs ISP2 at :15), they will have consistent hours-to-delivery, making historical analysis more reliable.
 
-> Note: This project uses GitHub Actions to run the fetcher, which means executions may not occur exactly on the specified intervals. GitHub schedules workflows based on resource availability, with high workload periods typically occurring around the hour mark (HH:00). To work around this, I've implemented a 5-minute tolerance window on either side of the target time and scheduled the jobs to run slightly before the quarter hours.
+> Note: The project runs on a personal VPS using a bash script at regular intervals via cron. This should provide more reliable execution timing compared to the previous GitHub Actions implementation.
 
 ## Data Structure
 ```
