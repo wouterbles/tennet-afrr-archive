@@ -33,7 +33,7 @@ log "INFO" "Fetching AFRR data..."
 $HOME/.local/bin/uv run --frozen affr_data_fetcher.py
 
 # Commit changes if any
-if ! git diff --quiet HEAD -- data/ || ! git diff --staged --quiet; then
+if [ -n "$(git status --porcelain data/)" ]; then
     log "INFO" "Committing changes..."
     git config user.name "github-actions[bot]"
     git config user.email "github-actions[bot]@users.noreply.github.com"
