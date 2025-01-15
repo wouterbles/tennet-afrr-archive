@@ -28,28 +28,22 @@ log "INFO" "Updating repository"
 git fetch origin main
 git switch -C main origin/main
 
-# Ensure uv is available and up to date
-if ! command -v uv &> /dev/null; then
-    log "INFO" "Installing uv..."
-    curl -LsSf https://astral.sh/uv/install.sh | sh
-fi
-
 # Run data fetcher
 log "INFO" "Fetching AFRR data..."
-uv run --frozen affr_data_fetcher.py
+$HOME/.local/bin/uv run --frozen affr_data_fetcher.py
 
-# Commit changes if any
-# if ! git diff --quiet HEAD -- data/ || ! git diff --staged --quiet; then
-#     log "INFO" "Committing changes..."
-#     git config user.name "github-actions[bot]"
-#     git config user.email "github-actions[bot]@users.noreply.github.com"
-#     git add data/
-#     git commit -m "Update AFRR data $(date '+%Y-%m-%d %H:%M:%S') (UTC)"
-#     git push origin main
-#     log "INFO" "Changes pushed successfully"
-# else
-#     log "INFO" "No changes to commit"
-# fi
+Commit changes if any
+if ! git diff --quiet HEAD -- data/ || ! git diff --staged --quiet; then
+    log "INFO" "Committing changes..."
+    git config user.name "github-actions[bot]"
+    git config user.email "github-actions[bot]@users.noreply.github.com"
+    git add data/
+    git commit -m "Update AFRR data $(date '+%Y-%m-%d %H:%M:%S') (UTC)"
+    git push origin main
+    log "INFO" "Changes pushed successfully"
+else
+    log "INFO" "No changes to commit"
+fi
 
 # Cleanup logs older than 5 days
 find "$LOG_DIR" -type f -name "*.log*" -mtime +5 -delete
