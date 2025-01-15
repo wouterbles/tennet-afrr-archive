@@ -35,8 +35,8 @@ $HOME/.local/bin/uv run --frozen affr_data_fetcher.py
 # Commit changes if any
 if [ -n "$(git status --porcelain data/)" ]; then
     log "INFO" "Committing changes..."
-    git config user.name "github-actions[bot]"
-    git config user.email "github-actions[bot]@users.noreply.github.com"
+    git config user.name "afrr-update[bot]"
+    git config user.email "afrr-update[bot]@users.noreply.github.com"
     git add data/
     git commit -m "Update AFRR data $(date '+%Y-%m-%d %H:%M:%S')"
     git push origin main

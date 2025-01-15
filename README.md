@@ -4,7 +4,7 @@ A Python application for downloading and archiving TenneT's AFRR (Automatic Freq
 
 ## Overview
 
-This project automatically downloads and archives bidladder snapshots from TenneT's API, which only provides latest data. The archive enables historical analysis of ladder changes over time.
+This project automatically downloads and archives bidladder snapshots from TenneT's API, which only provides the latest data. The archive enables historical analysis of ladder changes over time.
 
 ## Sampling
 
