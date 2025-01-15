@@ -10,8 +10,8 @@ This project automatically downloads and archives bidladder snapshots from Tenne
 
 To keep the size of the archive manageable the sampling frequency varies by time-to-delivery:
 
-- 12h-24h: Every 2 hours, aligned with ISP pattern 
-- 3h-12h: Every 15 minutes, aligned with ISP pattern
+- 12h-24h: Every 2 hours, aligned with ISP pattern
+- 3h-12h: Once per hour, aligned with ISP pattern
 - <3h: Every 15 minutes for all ISPs
 
 This ensures consistent hours-to-delivery across ISPs.
