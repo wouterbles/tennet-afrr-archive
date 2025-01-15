@@ -6,9 +6,16 @@ import pandas as pd
 from dotenv import load_dotenv
 from tenneteu import TenneTeuClient
 
+log_dir = Path("logs")
 load_dotenv()
 logging.basicConfig(
-    format="%(asctime)s - %(message)s", level=logging.INFO, datefmt="%Y-%m-%d %H:%M:%S"
+    format="%(asctime)s - %(message)s",
+    level=logging.INFO,
+    datefmt="%Y-%m-%d %H:%M:%S",
+    handlers=[
+        logging.FileHandler(log_dir / "afrr_python.log"),
+        logging.StreamHandler(),
+    ],
 )
 
 
