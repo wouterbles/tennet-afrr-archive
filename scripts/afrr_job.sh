@@ -38,7 +38,7 @@ if [ -n "$(git status --porcelain data/)" ]; then
     git config user.name "github-actions[bot]"
     git config user.email "github-actions[bot]@users.noreply.github.com"
     git add data/
-    git commit -m "Update AFRR data $(date '+%Y-%m-%d %H:%M:%S') (UTC)"
+    git commit -m "Update AFRR data $(date '+%Y-%m-%d %H:%M:%S')"
     git push origin main
     log "INFO" "Changes pushed successfully"
 else
