@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from tenneteu import TenneTeuClient
 
 log_dir = Path("logs")
+log_dir.mkdir(exist_ok=True)
 load_dotenv()
 logging.basicConfig(
     format="%(asctime)s - %(message)s",
@@ -28,7 +29,8 @@ class AFRRDataFetcher:
         self.rounded_time = None
         self.df = None
 
-    def get_timezone_suffix(self, timestamp: pd.Timestamp) -> str:
+    @staticmethod
+    def get_timezone_suffix(timestamp: pd.Timestamp) -> str:
         """Return CET or CEST depending on whether DST is in effect"""
         return "CEST" if timestamp.dst() else "CET"
 
@@ -55,32 +57,26 @@ class AFRRDataFetcher:
         diff_minutes = abs((self.current_time - self.rounded_time).total_seconds() / 60)
         return diff_minutes <= tolerance_minutes
 
-    def should_store_snapshot(
-        self, isp_start: pd.Timestamp, hours_to_delivery: float
-    ) -> bool:
+    @staticmethod
+    def should_store_snapshot(hours_to_delivery: float) -> bool:
         """
-        Determine if we should store a snapshot based on ISP alignment and hours to delivery.
+        Determine if we should store a snapshot based on hours to delivery.
 
         Sampling strategy:
-        - <3h: Every 15 minutes (all ISPs)
-        - 3h-12h: Store when current time aligns with ISP pattern (00, 15, 30, 45)
-        - ≥12h: Store every 2 hours, aligned with ISP pattern
+        - <3h: Every 15 minutes (0, 0.25, 0.5, 0.75, 1.0, ...)
+        - 3h-12h: Every hour (3, 4, 5, ..., 12)
+        - >12h: Every 2 hours (14, 16, 18, ..., 24)
         """
-        current_minutes = self.rounded_time.minute
-        current_hour = self.rounded_time.hour
-        isp_minutes = isp_start.minute
+        if hours_to_delivery < 0:
+            return False
 
-        # Less than 3 hours: sample every 15 minutes
-        if hours_to_delivery < 3:
-            return True
+        # Define target hours to delivery
+        quarter_hours = [i / 4 for i in range(12)]  # 0, 0.25, 0.5, ... 2.75
+        hourly = list(range(3, 12))  # 3, 4, 5, ..., 11
+        two_hourly = list(range(12, 25, 2))  # 12, 14, 16, ..., 24
+        target_hours = quarter_hours + hourly + two_hourly
 
-        # Between 3 and 12 hours: store when current time aligns with ISP pattern
-        elif hours_to_delivery < 12:
-            return current_minutes == isp_minutes
-
-        # Beyond 12 hours: store every 2 hours, maintaining ISP alignment
-        else:
-            return current_hour % 2 == 0 and current_minutes == isp_minutes
+        return hours_to_delivery in target_hours
 
     def set_current_bid_ladder(self):
         """Fetch current and upcoming bid ladders from TenneT API"""
@@ -115,9 +111,7 @@ class AFRRDataFetcher:
             minutes_to_delivery = int(time_to_delivery.total_seconds() / 60)
             hours_to_delivery = minutes_to_delivery / 60
 
-            if hours_to_delivery < 0:
-                continue
-            elif not self.should_store_snapshot(isp_start, hours_to_delivery):
+            if not self.should_store_snapshot(hours_to_delivery):
                 continue
 
             # Create storage structure
