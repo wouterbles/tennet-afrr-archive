@@ -9,7 +9,7 @@ TenneT's API only provides access to the latest bidladder data. This project aut
 ## Sampling
 To keep the size of the archive manageable and ensure consistent hours-to-delivery across ISPs, the sampling frequency varies based on the time-to-delivery:
 
-- >12h: Every 2 hours, aligned with ISP pattern (e.g., ISP at :00 sampled at 00:00, 02:00, 04:00...)
+- 12h-24h: Every 2 hours, aligned with ISP pattern (e.g., ISP at :00 sampled at 00:00, 02:00, 04:00...)
 - 3h-12h: Every 15 minutes, aligned with ISP pattern (sampled when current time matches ISP quarter)
 - <3h: Every 15 minutes for all ISPs
 
