@@ -1,51 +1,39 @@
 #!/bin/bash
 
-# Configuration
-REPO_DIR="${HOME}/tennet-afrr-archive"
-LOG_DIR="${REPO_DIR}/logs"
-BASH_LOG="${LOG_DIR}/afrr_fetch.log"
+set -euo pipefail
 
-# Create logs directory if it doesn't exist
-mkdir -p "$LOG_DIR"
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DATA_DIR="${AFRR_DATA_PATH:-${HOME}/tennet-afrr-data}"
+LOG_DIR="${DATA_DIR}/logs"
+UV_CACHE_DIR="${DATA_DIR}/.uv-cache"
+UV_BIN="$(command -v uv || true)"
+LOCK_FILE="${REPO_DIR}/.afrr_fetch.lock"
+LOG_FILE="${LOG_DIR}/afrr_fetch.log"
 
-# Set error handling
-set -e
+mkdir -p "$LOG_DIR" "$UV_CACHE_DIR"
+[[ -n "$UV_BIN" && -x "$UV_BIN" ]] || { echo "uv binary not found"; exit 1; }
 
 log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [$1] $2" | tee -a "$BASH_LOG"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [$1] $2" | tee -a "$LOG_FILE"
 }
 
 trap 'log ERROR "Script failed on line $LINENO. Exit code: $?"' ERR
 
-# Verify repository exists
-[[ -d "$REPO_DIR" ]] || { log ERROR "Repository not found: $REPO_DIR"; exit 1; }
-
-log "INFO" "Starting AFRR data fetch script"
-cd "$REPO_DIR"
-
-# Update repository
-log "INFO" "Updating repository"
-git fetch origin main
-git switch -C main origin/main
-
-# Run data fetcher
-log "INFO" "Fetching AFRR data..."
-$HOME/.local/bin/uv run --frozen affr_data_fetcher.py
-
-# Commit changes if any
-if [ -n "$(git status --porcelain data/)" ]; then
-    log "INFO" "Committing changes..."
-    git config user.name "afrr-update[bot]"
-    git config user.email "afrr-update[bot]@users.noreply.github.com"
-    git add data/
-    git commit -m "Update AFRR data $(date '+%Y-%m-%d %H:%M:%S')"
-    git push origin main
-    log "INFO" "Changes pushed successfully"
-else
-    log "INFO" "No changes to commit"
+exec 9>"$LOCK_FILE"
+if ! flock -n 9; then
+    log INFO "Another run is active, skipping this trigger"
+    exit 0
 fi
 
-# Cleanup logs older than 5 days
-find "$LOG_DIR" -type f -name "*.log*" -mtime +5 -delete
+log INFO "Starting AFRR fetch job"
+cd "$REPO_DIR"
 
-log "INFO" "Script completed successfully"
+git fetch origin main
+git switch main >/dev/null 2>&1 || git switch -c main --track origin/main
+git pull --ff-only origin main
+
+AFRR_DATA_PATH="$DATA_DIR" UV_CACHE_DIR="$UV_CACHE_DIR" \
+    "$UV_BIN" run --frozen affr_data_fetcher.py
+
+find "$LOG_DIR" -type f -name "*.log*" -mtime +5 -delete
+log INFO "AFRR fetch job completed"

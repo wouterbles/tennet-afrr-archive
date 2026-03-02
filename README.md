@@ -1,46 +1,62 @@
 # TenneT AFRR Bid Ladder Archive
 
-A Python application for downloading and archiving TenneT's AFRR (Automatic Frequency Restoration Reserve) bidladders at regular intervals.
+Historical archive of TenneT AFRR bid ladder snapshots, stored as a Delta table.
 
-## Overview
+## What Data Is Captured
 
-This project automatically downloads and archives bidladder snapshots from TenneT's API, which only provides the latest data. The archive enables historical analysis of ladder changes over time.
+Each ingestion run reads current + upcoming ladders and stores sampled snapshots.
 
-## Sampling
+Sampling by minutes-to-delivery (MTD):
 
-To keep the size of the archive manageable the sampling frequency varies by hours-to-delivery (HTD):
+- `<180 min`: every 15 minutes (`0, 15, ..., 165`)
+- `180–719 min`: every 60 minutes (`180, 240, ..., 660`)
+- `720–1440 min`: every 120 minutes (`720, 840, ..., 1440`)
 
-- 12h-24h: Every 2 hours (HTD = 14, 16, ..., 22)
-- 3h-12h: Every hour (HTD = 3, 4,, ..., 12)
-- <3h: Every 15 minutes (HTD = 0, 0.25, 0.5, ..)
+This keeps dense coverage close to delivery and lighter coverage further out.
 
-This results in uniform hours-to-delivery across ISPs.
+## Table Location
 
-> Note: Runs on VPS using cron-scheduled bash script for reliable execution timing.
+Default base directory:
 
-## Data Structure
+- `~/tennet-afrr-data`
+
+Delta table path:
+
+- `~/tennet-afrr-data/delta/afrr_bid_ladder`
+
+Partition column:
+
+- `isp_date` (Amsterdam date of the ISP start, `YYYY-MM-DD`)
+
+## Schema
+
+Each row is one bid ladder step for one ISP start at one snapshot time.
+
+- `isp_start_utc` (`timestamp`): ISP start in UTC
+- `capacity_threshold` (`int16`): ladder threshold
+- `price_down` (`float32`): downward price level
+- `price_up` (`float32`): upward price level
+- `snapshot_timestamp_utc` (`timestamp`): when the snapshot was captured (UTC)
+- `minutes_to_delivery` (`int16`): minutes from snapshot to ISP start
+- `isp_date` (`string`): local date used for table partitioning
+
+## Notes For Analysis
+
+- All timestamps are UTC. Convert to `Europe/Amsterdam` where needed.
+- `minutes_to_delivery` reflects the sampling grid described above.
+
+## Quick Example (Polars)
+
+```python
+import polars as pl
+
+df = (
+    pl.scan_delta("~/tennet-afrr-data/delta/afrr_bid_ladder")
+    .filter(pl.col("isp_date") == "2026-02-27")
+    .sort(["isp_start_utc", "minutes_to_delivery", "capacity_threshold"])
+    .collect()
+)
 ```
-data/
-└── YYYY-MM-DD/
-    └── HHMM_DST/
-        └── snapshot_HHMM_htd_X.Xh.parquet
-```
-
-The data is stored based on the date and time of the ISP. Each snapshot is saved in a Parquet file with a filename that includes the time of the snapshot and the hours-to-delivery (htd).
-
-- YYYY-MM-DD: ISP date
-- HHMM_DST: ISP time (24h format) with DST indicator (CET or CEST)
-- snapshot_HHMM_htd_X.XX.parquet: Snapshot data, where:
-    - HHMM: Time of the snapshot
-    - X.XX: Hours-to-delivery
-
-Parquet file contents:
-- `index`: ISP start timestamp
-- `capacity_threshold`
-- `price_down` 
-- `price_up` 
-- `snapshot_timestamp`: Exact snapshot timestamp
-- `minutes_to_delivery`: Minutes until ISP start (rounded to nearest quarter hour within 5-minute tolerance)
 
 ## Acknowledgements
 

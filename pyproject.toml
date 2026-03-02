@@ -5,8 +5,8 @@ description = "Downloading and storing the TenneT AFRR bid ladders at regular in
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "pandas>=2.2.3",
-    "pyarrow>=18.1.0",
-    "python-dotenv>=1.0.1",
-    "tenneteu-py>=0.1.2",
+    "deltalake>=1.4.2",
+    "polars>=1.0.0",
+    "python-dotenv>=1.2.1",
+    "tenneteu-py>=0.1.5",
 ]
