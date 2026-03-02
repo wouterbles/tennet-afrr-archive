@@ -33,8 +33,6 @@ timestamp="$(date -u '+%Y%m%dT%H%M%SZ')"
 archive_path="${BACKUP_DIR}/afrr_delta_${timestamp}.tar.zst"
 tar --zstd -C "$DATA_DIR" -cf "$archive_path" delta
 
-find "$BACKUP_DIR" -type f -name "afrr_delta_*.tar.zst" -mtime +14 -delete
-
 if [[ -n "$GITHUB_REPO" ]]; then
     if ! command -v gh >/dev/null 2>&1; then
         log ERROR "GITHUB_REPO is set but gh CLI is not installed"
@@ -47,5 +45,7 @@ if [[ -n "$GITHUB_REPO" ]]; then
         GITHUB_KEEP_ASSETS="${GITHUB_KEEP_ASSETS:-14}" \
         /bin/bash scripts/upload_backup_to_github.sh "$archive_path" | tee -a "$LOG_FILE"
 fi
+
+rm -f "$archive_path"
 
 log INFO "Daily maintenance completed"

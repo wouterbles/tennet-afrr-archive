@@ -28,7 +28,10 @@ fi
 
 gh release upload "$GITHUB_RELEASE_TAG" "$ARCHIVE_PATH" --repo "$GITHUB_REPO" >/dev/null
 
-mapfile -t backup_assets < <(
+backup_assets=()
+while IFS= read -r line; do
+    backup_assets+=("$line")
+done < <(
     gh release view "$GITHUB_RELEASE_TAG" \
         --repo "$GITHUB_REPO" \
         --json assets \
