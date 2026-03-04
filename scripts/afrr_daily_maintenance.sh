@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+export PATH="$HOME/.local/bin:$HOME/.cargo/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
+
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DATA_DIR="${AFRR_DATA_PATH:-${HOME}/tennet-afrr-data}"
 LOG_DIR="${DATA_DIR}/logs"
@@ -12,7 +14,12 @@ LOG_FILE="${LOG_DIR}/afrr_maintenance.log"
 GITHUB_REPO="${GITHUB_REPO:-}"
 
 mkdir -p "$LOG_DIR" "$BACKUP_DIR" "$UV_CACHE_DIR"
-[[ -n "$UV_BIN" && -x "$UV_BIN" ]] || { echo "uv binary not found"; exit 1; }
+
+if [[ -z "$UV_BIN" || ! -x "$UV_BIN" ]]; then
+    echo "ERROR: 'uv' binary not found. PATH is: $PATH" | tee -a "$LOG_FILE"
+    exit 1
+fi
+
 cd "$REPO_DIR"
 
 log() {
@@ -21,6 +28,7 @@ log() {
 
 log INFO "Starting daily maintenance"
 
+# 1. Run the Python Delta Maintenance
 AFRR_DATA_PATH="$DATA_DIR" UV_CACHE_DIR="$UV_CACHE_DIR" \
     "$UV_BIN" run --frozen python scripts/delta_maintenance.py | tee -a "$LOG_FILE"
 
@@ -29,15 +37,20 @@ if [[ ! -d "${DATA_DIR}/delta" ]]; then
     exit 0
 fi
 
+# 2. Create the Archive
 timestamp="$(date -u '+%Y%m%dT%H%M%SZ')"
 archive_path="${BACKUP_DIR}/afrr_delta_${timestamp}.tar.zst"
 tar --zstd -C "$DATA_DIR" -cf "$archive_path" delta
 
+# 3. Upload to GitHub (if REPO is set)
 if [[ -n "$GITHUB_REPO" ]]; then
     if ! command -v gh >/dev/null 2>&1; then
-        log ERROR "GITHUB_REPO is set but gh CLI is not installed"
+        log ERROR "GITHUB_REPO is set but 'gh' CLI is not found in PATH"
         exit 1
     fi
+    
+    # Note: Ensure 'scripts/upload_backup_to_github.sh' is executable!
+    chmod +x scripts/upload_backup_to_github.sh
 
     GH_TOKEN="${GH_TOKEN:-${GITHUB_TOKEN:-}}" \
         GITHUB_REPO="$GITHUB_REPO" \
