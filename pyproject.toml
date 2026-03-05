@@ -7,6 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
     "deltalake>=1.4.2",
     "polars>=1.0.0",
+    "pyarrow>=23.0.1",
     "python-dotenv>=1.2.1",
     "tenneteu-py>=0.1.5",
 ]
